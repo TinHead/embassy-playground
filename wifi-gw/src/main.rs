@@ -4,8 +4,6 @@
 #![feature(async_fn_in_trait)]
 #![allow(incomplete_features)]
 
-use core::str::from_utf8;
-
 use cyw43_pio::PioSpi;
 use defmt::*;
 use embassy_executor::Spawner;
@@ -18,14 +16,18 @@ use embassy_time::{Duration, Timer};
 use embedded_io::asynch::Write;
 use rust_mqtt::client::client::MqttClient;
 use rust_mqtt::client::client_config::ClientConfig;
-use rust_mqtt::packet::v5::reason_codes::ReasonCode;
+
 use rust_mqtt::utils::rng_generator::CountingRng;
 use static_cell::make_static;
 use {defmt_rtt as _, panic_probe as _};
 
 #[embassy_executor::task]
 async fn wifi_task(
-    runner: cyw43::Runner<'static, Output<'static, PIN_23>, PioSpi<'static, PIN_25, PIO0, 0, DMA_CH0>>,
+    runner: cyw43::Runner<
+        'static,
+        Output<'static, PIN_23>,
+        PioSpi<'static, PIN_25, PIO0, 0, DMA_CH0>,
+    >,
 ) -> ! {
     runner.run().await
 }
@@ -41,8 +43,8 @@ async fn main(spawner: Spawner) {
 
     let p = embassy_rp::init(Default::default());
 
-    let fw = include_bytes!("../../../../cyw43-firmware/43439A0.bin");
-    let clm = include_bytes!("../../../../cyw43-firmware/43439A0_clm.bin");
+    let fw = include_bytes!("43439A0.bin");
+    let clm = include_bytes!("43439A0_clm.bin");
 
     // To make flashing faster for development, you may want to flash the firmwares independently
     // at hardcoded addresses, instead of baking them into the program with `include_bytes!`:
@@ -54,7 +56,15 @@ async fn main(spawner: Spawner) {
     let pwr = Output::new(p.PIN_23, Level::Low);
     let cs = Output::new(p.PIN_25, Level::High);
     let mut pio = Pio::new(p.PIO0);
-    let spi = PioSpi::new(&mut pio.common, pio.sm0, pio.irq0, cs, p.PIN_24, p.PIN_29, p.DMA_CH0);
+    let spi = PioSpi::new(
+        &mut pio.common,
+        pio.sm0,
+        pio.irq0,
+        cs,
+        p.PIN_24,
+        p.PIN_29,
+        p.DMA_CH0,
+    );
 
     let state = make_static!(cyw43::State::new());
     let (net_device, mut control, runner) = cyw43::new(state, pwr, spi, fw).await;
@@ -91,7 +101,7 @@ async fn main(spawner: Spawner) {
     config.add_client_id("client");
     let mut rx_buffer = [0; 4096];
     let mut tx_buffer = [0; 4096];
-    let mut buf = [0; 4096];
+    let _buf = [0; 4096];
 
     config.max_packet_size = 1024;
     let mut recv_buffer = [0; 1024];
@@ -100,7 +110,10 @@ async fn main(spawner: Spawner) {
 
     loop {
         //control.join_open(env!("WIFI_NETWORK")).await;
-        match control.join_wpa2(env!("WIFI_NETWORK"), env!("WIFI_PASSWORD")).await {
+        match control
+            .join_wpa2(env!("WIFI_NETWORK"), env!("WIFI_PASSWORD"))
+            .await
+        {
             Ok(_) => break,
             Err(err) => {
                 info!("join failed with status={}", err.status);
@@ -113,7 +126,14 @@ async fn main(spawner: Spawner) {
     let host_addr = embassy_net::Ipv4Address::new(192, 168, 1, 7);
     socket.connect((host_addr, 1883)).await;
 
-    let mut client = MqttClient::<_, 5, _>::new(socket, &mut write_buffer, 255, &mut recv_buffer, 255, config);
+    let mut client = MqttClient::<_, 5, _>::new(
+        socket,
+        &mut write_buffer,
+        255,
+        &mut recv_buffer,
+        255,
+        config,
+    );
     // And now we can use it!
     client.connect_to_broker().await.unwrap();
     // ha presentation
