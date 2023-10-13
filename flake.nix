@@ -21,8 +21,8 @@
           buildInputs = [
             python39
             openssl
-            pkgconfig
-            exa
+            pkg-config
+            eza
             fd
             gdb
             rust-analyzer
@@ -30,7 +30,7 @@
             libudev-zero
             flip-link
             probe-run
-            probe-rs-cli
+            probe-rs
             elf2uf2-rs
             tio
             (rust-bin.nightly.latest.default.override {
