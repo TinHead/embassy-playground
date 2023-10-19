@@ -1281,11 +1281,11 @@ dependencies = [
 [[package]]
 name = "rust-mqtt"
 version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdc13ec0011fe629417adf19495d202855fdfa63abbf44c34552d18adce3b5f8"
+source = "git+https://github.com/tinhead/rust-mqtt.git?rev=8665130e77929159e56d0d3edeb8a30b15cdeb23#8665130e77929159e56d0d3edeb8a30b15cdeb23"
 dependencies = [
  "defmt",
  "embedded-io 0.4.0",
+ "embedded-io-async",
  "heapless",
  "rand_core",
 ]
